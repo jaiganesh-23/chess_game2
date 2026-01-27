@@ -1179,6 +1179,9 @@ function GamePage() {
       <div className='navbar'>
         <p className='heading'>Chess</p>
       </div>
+      <div className='player-info'>
+        <p>You are playing as: <span className='player-color'>{playerColor}</span></p>
+      </div>
       <div className='WhitePieces'>
         <div className="whiteoverlay"></div>
         <div className='whitepieces'>

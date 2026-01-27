@@ -12,6 +12,21 @@
     padding: 1rem;
 }
 
+.player-info {
+    background-color: #f0f0f0;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-bottom: 2px solid violet;
+}
+
+.player-color {
+    color: violet;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
 .heading{
     color: white;
     font-size: 2rem;
@@ -114,7 +129,7 @@
     border: none;
     border-radius: 50px;
     cursor: pointer;
-    margin-top: 2rem;
+    margin-top: 0.5rem;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
