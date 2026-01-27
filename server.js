@@ -11,6 +11,11 @@ const app = express();
 // Serve React build
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Fallback to index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
