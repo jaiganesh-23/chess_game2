@@ -97,20 +97,31 @@ function GamePage() {
   // Initialize WebSocket connection
   useEffect(() => {
     if (!wsConnectionRef.current && gameId && playerColor) {
-      const ws = new GameWebSocket(gameId);
-      wsConnectionRef.current = ws;
+      // Check if there's already a WebSocket from LandingPage (via sessionStorage)
+      const existingWs = window.gameWebSocket;
+      
+      if (existingWs && existingWs.gameId === gameId) {
+        // Reuse existing connection
+        wsConnectionRef.current = existingWs;
+        console.log('Reusing existing WebSocket connection for game:', gameId);
+      } else {
+        // Create new connection
+        const ws = new GameWebSocket(gameId);
+        wsConnectionRef.current = ws;
+        window.gameWebSocket = ws; // Store globally for reuse
+        
+        // Send GAME_CONNECTED message to notify server this connection is for the game
+        const connectListener = () => {
+          console.log('GamePage WebSocket connected, registering game connection');
+          ws.send({
+            type: 'REGISTER_PLAYER',
+            gameId,
+            playerColor
+          });
+        };
 
-      // Send GAME_CONNECTED message to notify server this connection is for the game
-      const connectListener = () => {
-        console.log('GamePage WebSocket connected, registering game connection');
-        ws.send({
-          type: 'REGISTER_PLAYER',
-          gameId,
-          playerColor
-        });
-      };
-
-      ws.on('connected', connectListener);
+        ws.on('connected', connectListener);
+      }
     }
   }, [gameId, playerColor]);
 

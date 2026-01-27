@@ -36,6 +36,7 @@ function LandingPage() {
         // Create WebSocket connection
         const ws = new GameWebSocket(null); // No gameId yet
         setWsConnection(ws);
+        window.gameWebSocket = ws; // Store globally for reuse in GamePage
 
         // Listen for game assignment
         ws.on('WAITING_FOR_OPPONENT', (message) => {
@@ -49,6 +50,9 @@ function LandingPage() {
         // Listen for game start
         ws.on('GAME_STARTED', (message) => {
             console.log('Game started!', message);
+            // Update websocket's gameId
+            ws.gameId = message.gameId;
+            window.gameWebSocket = ws;
             navigate(`/game/${message.gameId}`, { 
                 state: { 
                     playerColor: message.yourColor,
