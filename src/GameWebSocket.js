@@ -126,47 +126,51 @@ class GameWebSocket {
 export default GameWebSocket;
 
 export const connectWebSocket = (onGameStarted, onOpponentMove, onGameOver, onOpponentDisconnected) => {
-  // Detect if running on Render or localhost
+  // Dynamically build WebSocket URL based on current location
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;
   const wsUrl = `${protocol}//${host}`;
 
-  console.log('Connecting to WebSocket:', wsUrl);
-  
+  console.log('Connecting to WebSocket at:', wsUrl);
+
   const ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
-    console.log('WebSocket connection established');
-  };
-
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log('Received message:', message);
-
-    switch (message.type) {
-      case 'GAME_STARTED':
-        onGameStarted(message);
-        break;
-      case 'OPPONENT_MOVE':
-        onOpponentMove(message);
-        break;
-      case 'GAME_OVER':
-        onGameOver(message);
-        break;
-      case 'OPPONENT_DISCONNECTED':
-        onOpponentDisconnected(message);
-        break;
-      default:
-        console.warn('Unknown message type:', message.type);
-    }
-  };
-
-  ws.onclose = () => {
-    console.log('WebSocket connection closed');
+    console.log('WebSocket connected');
   };
 
   ws.onerror = (error) => {
     console.error('WebSocket error:', error);
+  };
+
+  ws.onclose = () => {
+    console.log('WebSocket disconnected');
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      console.log('Received message:', message);
+
+      switch (message.type) {
+        case 'GAME_STARTED':
+          onGameStarted(message);
+          break;
+        case 'OPPONENT_MOVE':
+          onOpponentMove(message);
+          break;
+        case 'GAME_OVER':
+          onGameOver(message);
+          break;
+        case 'OPPONENT_DISCONNECTED':
+          onOpponentDisconnected(message);
+          break;
+        default:
+          console.warn('Unknown message type:', message.type);
+      }
+    } catch (error) {
+      console.error('Error parsing message:', error);
+    }
   };
 
   return ws;

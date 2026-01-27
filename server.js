@@ -17,7 +17,10 @@ app.use((req, res) => {
 });
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ 
+  server,
+  perMessageDeflate: false // Disable compression for better compatibility
+});
 
 // Store waiting players and active games
 const waitingPlayers = new Map(); // gameId -> { ws, color }
