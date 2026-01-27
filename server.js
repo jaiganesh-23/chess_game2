@@ -1,8 +1,17 @@
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const server = http.createServer();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const app = express();
+
+// Serve React build
+app.use(express.static(path.join(__dirname, 'dist')));
+
+const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 // Store waiting players and active games
@@ -210,6 +219,6 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log(`WebSocket server running on ws://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
