@@ -46,6 +46,7 @@ function GamePage() {
   let [checkLandingPoints, setCheckLandingPoints] = useState(null);
   let [checkMate, setCheckMate] = useState(false);
   let [staleMate, setStaleMate] = useState(false);
+  let [lastMovedColor, setLastMovedColor] = useState(null);
 
   // Set up event handlers using useCallback so they have correct closures
   const handleOpponentMove = useCallback((message) => {
@@ -61,7 +62,10 @@ function GamePage() {
       const newTurn = message.turn || message.gameState?.turn;
       console.log('Setting turn to:', newTurn);
       setTurn(newTurn);
-      console.log('Board and turn updated. New turn:', newTurn);
+      // Track which color made this move
+      const movedColor = newTurn === "White" ? "Black" : "White";
+      setLastMovedColor(movedColor);
+      console.log('Board and turn updated. New turn:', newTurn, 'Last moved color:', movedColor);
     }
     if (message.gameState) {
       // Update game state from opponent's move
@@ -75,6 +79,8 @@ function GamePage() {
     console.log('Board sync:', message);
     setBoard(message.board.map(row => [...row]));
     setTurn(message.turn);
+    const movedColor = message.turn === "White" ? "Black" : "White";
+    setLastMovedColor(movedColor);
   }, []);
 
   const handleOpponentDisconnect = useCallback(() => {
@@ -879,6 +885,11 @@ function GamePage() {
     }
     setPrevLandingPoints(landingPoints);
     
+    // Track which color made this move (the current player)
+    if (selectionPoints && landingPoints) {
+      setLastMovedColor(playerColor);
+    }
+    
     // Send move to opponent via WebSocket BEFORE clearing state
     if (wsConnectionRef.current && selectionPoints && landingPoints) {
       console.log('Sending move:', { from: selectionPoints, to: landingPoints });
@@ -977,6 +988,13 @@ function GamePage() {
     else if(board[row][col] != "X"){
       const pieceColor = board[row][col].substring(0, 5);
       console.log('Clicked piece:', board[row][col], 'PieceColor:', pieceColor, 'Turn:', turn, 'PlayerColor:', playerColor, 'SelectedPiece:', selectedPiece);
+      
+      // Check if player is trying to move same color twice in a row
+      if (lastMovedColor === pieceColor && lastMovedColor === playerColor) {
+        console.log('Cannot move same color twice in a row. Last moved:', lastMovedColor, 'Trying to move:', pieceColor);
+        alert("You cannot move the same color twice in a row!");
+        return;
+      }
       
       // Only prevent selecting opponent's pieces if no piece is selected yet
       // If a piece is already selected, allow clicking on opponent pieces (for capturing)
