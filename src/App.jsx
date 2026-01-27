@@ -828,8 +828,8 @@ function GamePage() {
 
   useEffect(() => {
     if(checkMate){
-      const winner = turn == "White" ? "Black" : "White";
-      const message = turn == "White" ? "CheckMate Black Wins!" : "CheckMate White Wins!";
+      const winner = turn == "White" ? "White" : "Black";
+      const message = turn == "White" ? "CheckMate White Wins!" : "CheckMate Black Wins!";
       alert(message);
       
       // Send GAME_OVER message to opponent and server
