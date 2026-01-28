@@ -90,8 +90,20 @@ function GamePage() {
 
   const handleGameOver = useCallback((message) => {
     console.log('Received GAME_OVER message:', message);
-    alert(`Game Over! Result: ${message.result}`);
-    navigate('/');
+    
+    // Show appropriate alert based on who initiated and the result
+    if (message.result.includes('StaleMate')) {
+      alert(`Game Over! ${message.result}`);
+    } else if (message.result.includes('CheckMate')) {
+      alert(`Game Over! ${message.result}`);
+    } else {
+      alert(`Game Over! Result: ${message.result}`);
+    }
+    
+    // Add a small delay before navigating to ensure alert is seen
+    setTimeout(() => {
+      navigate('/');
+    }, 3000);
   }, [navigate]);
 
   const handleError = useCallback((error) => {
@@ -641,122 +653,122 @@ function GamePage() {
 
       if(curSelectedPiece.substr(6) == "King"){
         let i = row+1, j = col;
-        if(i<=7 && board[i][j].substring(0, 5) != "White"){
+        if(i<=7 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row-1, j = col;
-        if(i>=0 && board[i][j].substring(0, 5) != "White"){
+        if(i>=0 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row, j = col+1;
-        if(j<=7 && board[i][j].substring(0, 5) != "White"){
+        if(j<=7 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row, j = col-1;
-        if(j>=0 && board[i][j].substring(0, 5) != "White"){
+        if(j>=0 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
 
         i = row-1, j = col-1;
-        if(i>=0 && j>=0 && board[i][j].substring(0, 5) != "White"){
+        if(i>=0 && j>=0 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row-1, j = col+1;
-        if(i>=0 && j<=7 && board[i][j].substring(0, 5) != "White"){
+        if(i>=0 && j<=7 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row+1, j = col-1;
-        if(i<=7 && j>=0 && board[i][j].substring(0, 5) != "White"){
+        if(i<=7 && j>=0 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
 
         i = row+1, j = col+1;
-        if(i<=7 && j<=7 && board[i][j].substring(0, 5) != "White"){
+        if(i<=7 && j<=7 && board[i][j].substring(0, 5) != "White") {
           points.push([i, j]);
         }
       }
 
       if(curSelectedPiece.substr(6) == "Queen"){
         let i = row+1, j = col;
-        while(i<=7 && board[i][j] == "X"){
+        while(i<=7 && board[i][j] == "X") {
           points.push([i, j]);
           i++;
         }
-        if(i<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row-1, j = col;
-        while(i>=0 && board[i][j] == "X"){
+        while(i>=0 && board[i][j] == "X") {
           points.push([i, j]);
           i--;
         }
-        if(i>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row, j = col+1;
-        while(j<=7 && board[i][j] == "X"){
+        while(j<=7 && board[i][j] == "X") {
           points.push([i, j]);
           j++;
         }
-        if(j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row, j = col-1;
-        while(j>=0 && board[i][j] == "X"){
+        while(j>=0 && board[i][j] == "X") {
           points.push([i, j]);
           j--;
         }
-        if(j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
 
         i = row-1, j = col-1;
-        while(i>=0 && j>=0 && board[i][j] == "X"){
+        while(i>=0 && j>=0 && board[i][j] == "X") {
           points.push([i, j]);
           i--;
           j--;
         }
-        if(i>=0 && j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i>=0 && j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row-1, j = col+1;
-        while(i>=0 && j<=7 && board[i][j] == "X"){
+        while(i>=0 && j<=7 && board[i][j] == "X") {
           points.push([i, j]);
           i--;
           j++;
         }
-        if(i>=0 && j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i>=0 && j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row+1, j = col-1;
-        while(i<=7 && j>=0 && board[i][j] == "X"){
+        while(i<=7 && j>=0 && board[i][j] == "X") {
           points.push([i, j]);
           i++;
           j--;
         }
-        if(i<=7 && j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i<=7 && j>=0 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
 
         i = row+1, j = col+1;
-        while(i<=7 && j<=7 && board[i][j] == "X"){
+        while(i<=7 && j<=7 && board[i][j] == "X") {
           points.push([i, j]);
           i++;
           j++;
         }
-        if(i<=7 && j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black"){
+        if(i<=7 && j<=7 && board[i][j] != "X" && board[i][j].substring(0,5) == "Black") {
           points.push([i, j]);
         }
       }
@@ -829,13 +841,29 @@ function GamePage() {
       else{
         alert("Black has no possible moves! StaleMate, Its a draw!");
       }
+      if(wsConnectionRef.current){
+        console.log('Sending GAME_OVER message with result: Draw by StaleMate');
+        console.log('GameId:', wsConnectionRef.current.gameId);
+        wsConnectionRef.current.send({
+          type: 'GAME_OVER',
+          result: 'Draw by StaleMate',
+          initiatedBy: playerColor
+        });
+        console.log('GAME_OVER message sent');
+      }
+      else{
+        console.log('WebSocket not available, cannot send GAME_OVER');
+      }
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
     }
-  }, [staleMate])
+  }, [staleMate, wsConnectionRef, playerColor, navigate])
 
   useEffect(() => {
     if(checkMate){
       const winner = turn == "White" ? "White" : "Black";
-      const message = turn == "White" ? "CheckMate White Wins!" : "CheckMate Black Wins!";
+      const message = turn == "White" ? "CheckMate! White Wins!" : "CheckMate! Black Wins!";
       alert(message);
       
       // Send GAME_OVER message to opponent and server
@@ -844,14 +872,18 @@ function GamePage() {
         console.log('GameId:', wsConnectionRef.current.gameId);
         wsConnectionRef.current.send({
           type: 'GAME_OVER',
-          result: winner + ' Wins by CheckMate'
+          result: winner + ' Wins by CheckMate',
+          initiatedBy: playerColor
         });
         console.log('GAME_OVER message sent');
       } else {
         console.log('WebSocket not available, cannot send GAME_OVER');
       }
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
     }
-  },[checkMate, turn, wsConnectionRef])
+  },[checkMate, turn, wsConnectionRef, playerColor, navigate])
 
   useEffect(() => {
     setCheck1((prev) => isCheck(board, turn == "White"?"Black":"White"));

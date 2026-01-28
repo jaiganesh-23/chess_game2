@@ -172,6 +172,7 @@ wss.on('connection', (ws) => {
         const gameId = message.gameId;
         console.log(`GAME_OVER received for game ${gameId}`);
         console.log('Active games before deletion:', Array.from(activeGames.keys()));
+        console.log('Result:', message.result);
         const game = activeGames.get(gameId);
         if (game) {
           const opponent =
