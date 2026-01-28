@@ -72,6 +72,10 @@ function GamePage() {
       setWhiteKingMoved(message.gameState.whiteKingMoved);
       setBlackKingMoved(message.gameState.blackKingMoved);
       setPrevLandingPoints(message.gameState.prevLandingPoints);
+      // Show check alert if opponent put us in check
+      if (message.gameState.isCheck) {
+        alert("Check! You are in check!");
+      }
     }
   }, []);
 
@@ -85,7 +89,9 @@ function GamePage() {
 
   const handleOpponentDisconnect = useCallback(() => {
     alert('Opponent disconnected. Returning to landing page...');
-    navigate('/');
+    setTimeout(() => {
+      navigate('/');
+    }, 5000);
   }, [navigate]);
 
   const handleGameOver = useCallback((message) => {
@@ -103,13 +109,15 @@ function GamePage() {
     // Add a small delay before navigating to ensure alert is seen
     setTimeout(() => {
       navigate('/');
-    }, 3000);
+    }, 5000);
   }, [navigate]);
 
   const handleError = useCallback((error) => {
     console.error('WebSocket error:', error);
     alert('Connection error. Please return to landing page.');
-    navigate('/');
+    setTimeout(() => {
+      navigate('/');
+    }, 5000);
   }, [navigate]);
 
   // Initialize WebSocket connection
@@ -180,12 +188,16 @@ function GamePage() {
       console.log('sendMove called with gameId:', wsConnectionRef.current.gameId);
       console.log('Move data:', moveData);
       console.log('Sending board:', boardState);
+      // Check if opponent is in check after this move
+      const opponentColor = turn === "White" ? "Black" : "White";
+      const isOpponentInCheck = isCheck(boardState, opponentColor);
       wsConnectionRef.current.sendMove(moveData, boardState, {
         board: boardState,
         whiteKingMoved,
         blackKingMoved,
         prevLandingPoints,
-        turn
+        turn,
+        isCheck: isOpponentInCheck
       });
     } else {
       console.warn('WebSocket connection not ready');
@@ -856,7 +868,7 @@ function GamePage() {
       }
       setTimeout(() => {
         navigate('/');
-      }, 3000);
+      }, 5000);
     }
   }, [staleMate, wsConnectionRef, playerColor, navigate])
 
@@ -881,7 +893,7 @@ function GamePage() {
       }
       setTimeout(() => {
         navigate('/');
-      }, 3000);
+      }, 5000);
     }
   },[checkMate, turn, wsConnectionRef, playerColor, navigate])
 
