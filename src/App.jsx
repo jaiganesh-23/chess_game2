@@ -11,6 +11,7 @@ function GamePage() {
   const [playerColor, setPlayerColor] = useState(location.state?.playerColor || null);
   const [opponentColor, setOpponentColor] = useState(location.state?.opponentColor || null);
   const wsConnectionRef = useRef(null);
+  const prevBoardRef = useRef(null); // Track previous board state for movement detection
   
   let [board, setBoard] = useState([["White Rook", "White Knight", "White Bishop", "White Queen", "White King", "White Bishop", "White Knight", "White Rook"],
                                     ["White Pawn", "White Pawn", "White Pawn", "White Pawn", "White Pawn", "White Pawn", "White Pawn", "White Pawn"],
@@ -38,6 +39,11 @@ function GamePage() {
   let [possibleLandingPoints, setPossibleLandingPoints] = useState(null);
   let [whiteKingMoved, setWhiteKingMoved] = useState(false);
   let [blackKingMoved, setBlackKingMoved] = useState(false);
+  // Track individual rook movements for castling validation
+  let [whiteLeftRookMoved, setWhiteLeftRookMoved] = useState(false);   // a1 rook
+  let [whiteRightRookMoved, setWhiteRightRookMoved] = useState(false); // h1 rook
+  let [blackLeftRookMoved, setBlackLeftRookMoved] = useState(false);   // a8 rook
+  let [blackRightRookMoved, setBlackRightRookMoved] = useState(false); // h8 rook
   let [prevSelectedPiece, setPrevSelectedPiece] = useState(null);
   let [prevSteps, setPrevSteps] = useState(null);
   let [specialLandingPoints, setSpecialLandingPoints] = useState(null);
@@ -71,6 +77,20 @@ function GamePage() {
       // Update game state from opponent's move
       setWhiteKingMoved(message.gameState.whiteKingMoved);
       setBlackKingMoved(message.gameState.blackKingMoved);
+      // Sync rook movement states - only allow transition from false to true, never back to false
+      // This ensures rook movement is permanent
+      if (message.gameState.whiteLeftRookMoved === true) {
+        setWhiteLeftRookMoved(true);
+      }
+      if (message.gameState.whiteRightRookMoved === true) {
+        setWhiteRightRookMoved(true);
+      }
+      if (message.gameState.blackLeftRookMoved === true) {
+        setBlackLeftRookMoved(true);
+      }
+      if (message.gameState.blackRightRookMoved === true) {
+        setBlackRightRookMoved(true);
+      }
       setPrevLandingPoints(message.gameState.prevLandingPoints);
       // Show check alert if opponent put us in check
       if (message.gameState.isCheck) {
@@ -85,6 +105,28 @@ function GamePage() {
     setTurn(message.turn);
     const movedColor = message.turn === "White" ? "Black" : "White";
     setLastMovedColor(movedColor);
+    
+    // Also sync rook movement states if provided
+    if (message.gameState) {
+      if (message.gameState.whiteLeftRookMoved === true) {
+        setWhiteLeftRookMoved(true);
+      }
+      if (message.gameState.whiteRightRookMoved === true) {
+        setWhiteRightRookMoved(true);
+      }
+      if (message.gameState.blackLeftRookMoved === true) {
+        setBlackLeftRookMoved(true);
+      }
+      if (message.gameState.blackRightRookMoved === true) {
+        setBlackRightRookMoved(true);
+      }
+      if (message.gameState.whiteKingMoved === true) {
+        setWhiteKingMoved(true);
+      }
+      if (message.gameState.blackKingMoved === true) {
+        setBlackKingMoved(true);
+      }
+    }
   }, []);
 
   const handleOpponentDisconnect = useCallback(() => {
@@ -182,19 +224,98 @@ function GamePage() {
     setPossibleLandingPoints(null);
   }, [board]);
 
+  // Helper function to get current game state based on board position
+  const getGameState = useCallback((boardState = board) => {
+    return {
+      whiteKingMoved: whiteKingMoved || boardState[0][4] !== "White King",
+      blackKingMoved: blackKingMoved || boardState[7][4] !== "Black King",
+      whiteLeftRookMoved: whiteLeftRookMoved || boardState[0][0] !== "White Rook",
+      whiteRightRookMoved: whiteRightRookMoved || boardState[0][7] !== "White Rook",
+      blackLeftRookMoved: blackLeftRookMoved || boardState[7][0] !== "Black Rook",
+      blackRightRookMoved: blackRightRookMoved || boardState[7][7] !== "Black Rook"
+    };
+  }, [whiteKingMoved, blackKingMoved, whiteLeftRookMoved, whiteRightRookMoved, blackLeftRookMoved, blackRightRookMoved]);
+
+  // Track rook movements by detecting changes in board state
+  // Rook movement is PERSISTENT - once marked as moved, it never resets
+  useEffect(() => {
+    // Check white left rook (a1 = board[0][0])
+    if (!whiteLeftRookMoved) {
+      const currentAtA1 = board[0][0];
+      const prevAtA1 = prevBoardRef.current ? prevBoardRef.current[0][0] : "White Rook";
+      
+      if (prevAtA1 === "White Rook" && currentAtA1 !== "White Rook") {
+        console.log('White left rook moved from a1 - setting persistent flag');
+        setWhiteLeftRookMoved(true);
+      } else if (currentAtA1 !== "White Rook" && prevAtA1 !== "White Rook") {
+        console.log('White left rook detected as moved (not at a1 in consecutive states)');
+        setWhiteLeftRookMoved(true);
+      }
+    }
+
+    // Check white right rook (h1 = board[0][7])
+    if (!whiteRightRookMoved) {
+      const currentAtH1 = board[0][7];
+      const prevAtH1 = prevBoardRef.current ? prevBoardRef.current[0][7] : "White Rook";
+      
+      if (prevAtH1 === "White Rook" && currentAtH1 !== "White Rook") {
+        console.log('White right rook moved from h1 - setting persistent flag');
+        setWhiteRightRookMoved(true);
+      } else if (currentAtH1 !== "White Rook" && prevAtH1 !== "White Rook") {
+        console.log('White right rook detected as moved (not at h1 in consecutive states)');
+        setWhiteRightRookMoved(true);
+      }
+    }
+
+    // Check black left rook (a8 = board[7][0])
+    if (!blackLeftRookMoved) {
+      const currentAtA8 = board[7][0];
+      const prevAtA8 = prevBoardRef.current ? prevBoardRef.current[7][0] : "Black Rook";
+      
+      if (prevAtA8 === "Black Rook" && currentAtA8 !== "Black Rook") {
+        console.log('Black left rook moved from a8 - setting persistent flag');
+        setBlackLeftRookMoved(true);
+      } else if (currentAtA8 !== "Black Rook" && prevAtA8 !== "Black Rook") {
+        console.log('Black left rook detected as moved (not at a8 in consecutive states)');
+        setBlackLeftRookMoved(true);
+      }
+    }
+
+    // Check black right rook (h8 = board[7][7])
+    if (!blackRightRookMoved) {
+      const currentAtH8 = board[7][7];
+      const prevAtH8 = prevBoardRef.current ? prevBoardRef.current[7][7] : "Black Rook";
+      
+      if (prevAtH8 === "Black Rook" && currentAtH8 !== "Black Rook") {
+        console.log('Black right rook moved from h8 - setting persistent flag');
+        setBlackRightRookMoved(true);
+      } else if (currentAtH8 !== "Black Rook" && prevAtH8 !== "Black Rook") {
+        console.log('Black right rook detected as moved (not at h8 in consecutive states)');
+        setBlackRightRookMoved(true);
+      }
+    }
+
+    // Update the previous board reference for next comparison
+    prevBoardRef.current = board.map(row => [...row]);
+  }, [board, whiteLeftRookMoved, whiteRightRookMoved, blackLeftRookMoved, blackRightRookMoved]);
+
+
+
   // Send move to opponent
-  const sendMove = (moveData, boardState) => {
+  const sendMove = useCallback((moveData, boardState) => {
     if (wsConnectionRef.current) {
       console.log('sendMove called with gameId:', wsConnectionRef.current.gameId);
       console.log('Move data:', moveData);
-      console.log('Sending board:', boardState);
+      
+      const gameState = getGameState(boardState);
+      console.log('Sending game state with move:', gameState);
+      
       // Check if opponent is in check after this move
       const opponentColor = turn === "White" ? "Black" : "White";
       const isOpponentInCheck = isCheck(boardState, opponentColor);
+      
       wsConnectionRef.current.sendMove(moveData, boardState, {
-        board: boardState,
-        whiteKingMoved,
-        blackKingMoved,
+        ...gameState,
         prevLandingPoints,
         turn,
         isCheck: isOpponentInCheck
@@ -202,14 +323,16 @@ function GamePage() {
     } else {
       console.warn('WebSocket connection not ready');
     }
-  };
+  }, [getGameState, turn, prevLandingPoints]);
 
   // Sync board with opponent
-  const syncBoardWithOpponent = () => {
+  const syncBoardWithOpponent = useCallback(() => {
     if (wsConnectionRef.current) {
-      wsConnectionRef.current.syncBoard(board, turn);
+      const gameState = getGameState(board);
+      console.log('Syncing board with game state:', gameState);
+      wsConnectionRef.current.syncBoard(board, turn, gameState);
     }
-  };
+  }, [board, turn, getGameState]);
 
   function getSpecialLandingPoints(curSelectedPiece, selectionPoints, prevLandingPoints){
     let points = [];
@@ -908,12 +1031,39 @@ function GamePage() {
       setCheckLandingPoints(points);
     })();
     }
-    if(selectedPiece == "White King"){
-      setWhiteKingMoved((prev) => true);
+    
+    // Track king and rook movements ONLY when they are directly selected and moved
+    // Do NOT track during castling (castling handles its own tracking)
+    if(selectedPiece && selectionPoints && landingPoints){
+      if(selectedPiece == "White King"){
+        setWhiteKingMoved(true);
+      }
+      if(selectedPiece == "Black King"){
+        setBlackKingMoved(true);
+      }
+      // Track rook movements ONLY if rook is directly selected and moved (not during castling)
+      if(selectedPiece == "White Rook" && selectionPoints){
+        // Left rook (a1) - but only if it actually moved
+        if(selectionPoints[0] === 0 && selectionPoints[1] === 0){
+          setWhiteLeftRookMoved(true);
+        }
+        // Right rook (h1) - but only if it actually moved
+        else if(selectionPoints[0] === 0 && selectionPoints[1] === 7){
+          setWhiteRightRookMoved(true);
+        }
+      }
+      if(selectedPiece == "Black Rook" && selectionPoints){
+        // Left rook (a8) - but only if it actually moved
+        if(selectionPoints[0] === 7 && selectionPoints[1] === 0){
+          setBlackLeftRookMoved(true);
+        }
+        // Right rook (h8) - but only if it actually moved
+        else if(selectionPoints[0] === 7 && selectionPoints[1] === 7){
+          setBlackRightRookMoved(true);
+        }
+      }
     }
-    if(selectedPiece == "Black King"){
-      setBlackKingMoved((prev) => true);
-    }
+    
     setPrevSelectedPiece(selectedPiece);
     if(selectionPoints != null && landingPoints != null){
       setPrevSteps(Math.abs(selectionPoints[0]-landingPoints[0]) + Math.abs(selectionPoints[1]-landingPoints[1]));
@@ -956,79 +1106,125 @@ function GamePage() {
     const row = parseInt(e.currentTarget.parentElement.className.match(/row-(\d+)/)[1], 10) - 1;
     const col = parseInt(e.currentTarget.className.match(/col-(\d+)/)[1], 10) - 1;
     
-    if(selectedPiece != null && selectedPiece.substring(6) == "King" && board[row][col].substring(0,5) == selectedPiece.substring(0,5) && board[row][col].substring(6) == "Rook"){
-      let color = selectedPiece.substring(0,5);
-      if(color == "White" && !whiteKingMoved){
-        let rookLandingPoints = getPossibleLandingPoints("White Rook", [row, col], board);
-        if(row == 0 && col == 0){
-          if(rookLandingPoints.some(([r,c]) => r === 0 && c === 3)){
-            setBoard((board) => {
-              const newBoard = board.map((r, i) => 
-                r.map((cell, j) => {
-                    if(i == 0 && j == 0) return "X";
-                    if(i == 0 && j == 2) return "White King";
-                    if(i == 0 && j == 3) return "White Rook";
-                    if(i == 0 && j == 4) return "X";
-                    return cell;
-                  })
-                )
-              return newBoard;
-            })
-          }
-        }
-        else if(row == 0 && col == 7){
-          if(rookLandingPoints.some(([r,c]) => r === 0 && c === 5)){
-            setBoard((board) => {
-              const newBoard = board.map((r, i) => 
-                r.map((cell, j) => {
-                    if(i == 0 && j == 7) return "X";
-                    if(i == 0 && j == 6) return "White King";
-                    if(i == 0 && j == 5) return "White Rook";
-                    if(i == 0 && j == 4) return "X";
-                    return cell;
-                  })
-                )
-              return newBoard;
-            })
-          }
+    // Helper function to validate castling move
+    const validateCastling = (board, color, kingRow, kingCol, rookRow, rookCol) => {
+      // Check if rook is in the expected position
+      if (board[rookRow][rookCol] !== `${color} Rook`) {
+        return false;
+      }
+
+      // Determine which side (left/right)
+      const isLeftSide = rookCol === 0;
+      
+      // Check rook movement using BOTH board state AND persistent flags
+      const rook_has_moved_flag = 
+        (color === "White" && isLeftSide && whiteLeftRookMoved) ||
+        (color === "White" && !isLeftSide && whiteRightRookMoved) ||
+        (color === "Black" && isLeftSide && blackLeftRookMoved) ||
+        (color === "Black" && !isLeftSide && blackRightRookMoved);
+
+      const rook_at_starting_position = 
+        (color === "White" && isLeftSide && board[0][0] === "White Rook") ||
+        (color === "White" && !isLeftSide && board[0][7] === "White Rook") ||
+        (color === "Black" && isLeftSide && board[7][0] === "Black Rook") ||
+        (color === "Black" && !isLeftSide && board[7][7] === "Black Rook");
+
+      // Check if king has moved from original position by examining board
+      const king_at_starting_position = 
+        (color === "White" && board[0][4] === "White King") ||
+        (color === "Black" && board[7][4] === "Black King");
+
+      // If rook has moved (via persistent flag OR not at starting position), castling is not allowed
+      if (rook_has_moved_flag || !rook_at_starting_position || !king_at_starting_position) {
+        return false;
+      }
+
+      // Check if king is in check
+      if (isCheck(board, color)) {
+        return false;
+      }
+
+      // Check if path is clear between king and rook
+      const minCol = Math.min(kingCol, rookCol);
+      const maxCol = Math.max(kingCol, rookCol);
+      for (let c = minCol + 1; c < maxCol; c++) {
+        if (board[kingRow][c] !== "X") {
+          return false;
         }
       }
-      else if(color == "Black" && !blackKingMoved){
-        let rookLandingPoints = getPossibleLandingPoints("Black Rook", [row, col], board);
-        if(row == 7 && col == 0){
-          if(rookLandingPoints.some(([r,c]) => r === 7 && c === 3)){
-            setBoard((board) => {
-              const newBoard = board.map((r, i) => 
-                r.map((cell, j) => {
-                    if(i == 7 && j == 0) return "X";
-                    if(i == 7 && j == 2) return "Black King";
-                    if(i == 7 && j == 3) return "Black Rook";
-                    if(i == 7 && j == 4) return "X";
-                    return cell;
-                  })
-                )
-              return newBoard;
-            })
-          }
+
+      // Determine landing position
+      const landingCol = isLeftSide ? 2 : 6;
+      const rookLandingCol = isLeftSide ? 3 : 5;
+
+      // Create a temporary board with king in landing position
+      const tempBoard = board.map((r, i) =>
+        r.map((cell, j) => {
+          if (i === kingRow && j === kingCol) return "X";
+          if (i === kingRow && j === landingCol) return `${color} King`;
+          return cell;
+        })
+      );
+
+      // Check if king passes through check when moving to castle position
+      if (isCheck(tempBoard, color)) {
+        return false;
+      }
+
+      // All validations passed
+      return { kingMove: [kingRow, landingCol], rookMove: [rookRow, rookLandingCol] };
+    };
+
+    // Handle castling move
+    if (selectedPiece && selectedPiece.substring(6) === "King" && board[row][col].substring(0, 5) === selectedPiece.substring(0, 5) && board[row][col].substring(6) === "Rook") {
+      const color = selectedPiece.substring(0, 5);
+      // kingRow should be the row where the king is (from selectionPoints)
+      const kingRow = selectionPoints[0];
+      const kingCol = selectionPoints[1];
+      const rookRow = row;
+      const rookCol = col;
+      
+      const castlingResult = validateCastling(board, color, kingRow, kingCol, rookRow, rookCol);
+      
+      if (castlingResult) {
+        const [newKingRow, newKingCol] = castlingResult.kingMove;
+        const [newRookRow, newRookCol] = castlingResult.rookMove;
+
+        const newBoard = board.map((r, i) =>
+          r.map((cell, j) => {
+            if (i === kingRow && j === kingCol) return "X"; // Clear king position
+            if (i === rookRow && j === rookCol) return "X"; // Clear rook position
+            if (i === newKingRow && j === newKingCol) return `${color} King`;
+            if (i === newRookRow && j === newRookCol) return `${color} Rook`;
+            return cell;
+          })
+        );
+
+        setBoard(newBoard);
+
+        // Update rook and king move tracking for castling
+        if (color === "White") {
+          if (rookCol === 0) setWhiteLeftRookMoved(true);
+          else setWhiteRightRookMoved(true);
+          setWhiteKingMoved(true);
+        } else {
+          if (rookCol === 0) setBlackLeftRookMoved(true);
+          else setBlackRightRookMoved(true);
+          setBlackKingMoved(true);
         }
-        else if(row == 7 && col == 7){
-          if(rookLandingPoints.some(([r,c]) => r === 7 && c === 5)){
-            setBoard((board) => {
-              const newBoard = board.map((r, i) => 
-                r.map((cell, j) => {
-                    if(i == 7 && j == 7) return "X";
-                    if(i == 7 && j == 6) return "Black King";
-                    if(i == 7 && j == 5) return "Black Rook";
-                    if(i == 7 && j == 4) return "X";
-                    return cell;
-                  })
-                )
-              return newBoard;
-            })
-          }
-        }
+
+        setSelectedPiece(null);
+        setSelectionPoints(null);
+        return; // Exit early after castling
+      } else {
+        // Castling is not valid, clear selection and alert user
+        alert("Castling is not allowed. King or Rook has already moved, or path is blocked. Or King is in check.");
+        setSelectedPiece(null);
+        setSelectionPoints(null);
+        return; // Prevent normal move logic from executing
       }
     }
+    
     else if(board[row][col] != "X"){
       const pieceColor = board[row][col].substring(0, 5);
       console.log('Clicked piece:', board[row][col], 'PieceColor:', pieceColor, 'Turn:', turn, 'PlayerColor:', playerColor, 'SelectedPiece:', selectedPiece);

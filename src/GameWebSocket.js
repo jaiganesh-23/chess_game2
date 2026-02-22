@@ -101,11 +101,12 @@ class GameWebSocket {
     });
   }
 
-  syncBoard(board, turn) {
+  syncBoard(board, turn, gameState) {
     this.send({
       type: 'SYNC_BOARD',
       board,
       turn,
+      gameState,
     });
   }
 

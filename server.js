@@ -160,11 +160,16 @@ wss.on('connection', (ws) => {
           const opponent =
             game.player1.ws === ws ? game.player2 : game.player1;
           if (opponent && opponent.ws.readyState === 1) {
-            opponent.ws.send(JSON.stringify({
+            const syncMessage = {
               type: 'BOARD_SYNC',
               board: message.board,
               turn: message.turn,
-            }));
+            };
+            // Include gameState if provided (for rook movement states)
+            if (message.gameState) {
+              syncMessage.gameState = message.gameState;
+            }
+            opponent.ws.send(JSON.stringify(syncMessage));
           }
         }
       } else if (type === 'GAME_OVER') {
